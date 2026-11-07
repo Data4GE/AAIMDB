@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Embed URL Builder</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: Inter, Arial, sans-serif;
+    background:
+        radial-gradient(circle at top left, #2457ff55, transparent 35%),
+        radial-gradient(circle at bottom right, #9b2cff55, transparent 35%),
+        #0f1117;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+}
+
+.card {
+    width: 100%;
+    max-width: 850px;
+    background: rgba(20, 24, 35, 0.88);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 24px;
+    padding: 28px;
+    box-shadow: 0 25px 80px rgba(0,0,0,0.45);
+    backdrop-filter: blur(18px);
+}
+
+h1 {
+    margin: 0 0 8px;
+    font-size: 34px;
+}
+
+.subtitle {
+    color: #aeb6c8;
+    margin-bottom: 24px;
+}
+
+.group {
+    margin-top: 22px;
+}
+
+.label {
+    font-size: 13px;
+    color: #aeb6c8;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+}
+
+.toolbar,
+.button-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+button {
+    border: 0;
+    border-radius: 14px;
+    padding: 12px 16px;
+    background: #242b3d;
+    color: white;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+button:hover {
+    background: #30384f;
+}
+
+button.active {
+    background: linear-gradient(135deg, #3772ff, #9b5cff);
+    box-shadow: 0 8px 25px rgba(55,114,255,.35);
+}
+
+input {
+    width: 100%;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+    background: #111722;
+    color: white;
+    padding: 15px;
+    font-size: 16px;
+    outline: none;
+}
+
+input:focus {
+    border-color: #6d8cff;
+    box-shadow: 0 0 0 3px rgba(109,140,255,.18);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+#seriesFields {
+    display: none;
+}
+
+.result-box {
+    background: #090d14;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 18px;
+    padding: 18px;
+    word-break: break-all;
+    font-family: Consolas, monospace;
+    color: #78ffb7;
+}
+
+.actions button {
+    min-width: 130px;
+}
+
+@media (max-width: 650px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
+
+    h1 {
+        font-size: 28px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+
+    <h1>🎬 Embed URL Builder</h1>
+    <div class="subtitle">
+        Build movie and series embed links using IMDb or TMDb IDs.
+    </div>
+
+    <div class="group">
+        <div class="label">Type & Site</div>
+
+        <div class="toolbar">
+            <button id="movieBtn" class="active" onclick="setType('movie')">
+                🎬 Movie
+            </button>
+
+            <button id="seriesBtn" onclick="setType('series')">
+                📺 Series
+            </button>
+
+            <button id="site1" class="active" onclick="setSite('https://vidsrcme.ru')">
+                vidsrcme.ru
+            </button>
+
+            <button id="site2" onclick="setSite('https://vsembed.ru')">
+                vsembed.ru
+            </button>
+
+            <button id="site3" onclick="setSite('https://vsembed.su')">
+                vsembed.su
+            </button>
+        </div>
+    </div>
+
+    <div class="group">
+        <div class="label">Search</div>
+
+        <input
+            id="searchBox"
+            placeholder="Search IMDb or TMDb..."
+        >
+
+        <div class="button-row" style="margin-top:10px;">
+            <button onclick="searchIMDb()">Search IMDb</button>
+            <button onclick="searchTMDB()">Search TMDb</button>
+        </div>
+    </div>
+
+    <div class="group">
+        <div class="label">IMDb / TMDb ID or URL</div>
+
+        <input
+            id="mediaInput"
+            placeholder="tt10234362 or https://www.imdb.com/title/tt10234362/"
+            oninput="buildUrl()"
+        >
+    </div>
+
+    <div id="seriesFields" class="group">
+        <div class="grid">
+            <div>
+                <div class="label">Season</div>
+                <input id="season" placeholder="1" oninput="buildUrl()">
+            </div>
+
+            <div>
+                <div class="label">Episode</div>
+                <input id="episode" placeholder="1" oninput="buildUrl()">
+            </div>
+        </div>
+    </div>
+
+    <div class="group">
+        <div class="label">Generated URL</div>
+
+        <div id="result" class="result-box">
+            Waiting for input...
+        </div>
+    </div>
+
+    <div class="group actions button-row">
+        <button onclick="copyUrl()">📋 Copy URL</button>
+        <button onclick="openUrl()">🌐 Open URL</button>
+    </div>
+
+</div>
+
+<script>
+let currentSite = "https://vidsrcme.ru";
+let currentType = "movie";
+
+function setType(type) {
+    currentType = type;
+
+    movieBtn.classList.remove("active");
+    seriesBtn.classList.remove("active");
+
+    if (type === "movie") {
+        movieBtn.classList.add("active");
+        seriesFields.style.display = "none";
+    } else {
+        seriesBtn.classList.add("active");
+        seriesFields.style.display = "block";
+    }
+
+    buildUrl();
+}
+
+function setSite(site) {
+    currentSite = site;
+
+    document.querySelectorAll("[id^='site']")
+        .forEach(btn => btn.classList.remove("active"));
+
+    if (site.includes("vidsrcme")) site1.classList.add("active");
+    if (site === "https://vsembed.ru") site2.classList.add("active");
+    if (site === "https://vsembed.su") site3.classList.add("active");
+
+    buildUrl();
+}
+
+function getMediaId(value) {
+    value = value.trim();
+
+    let imdbUrl = value.match(/title\/(tt\d+)/i);
+    if (imdbUrl) return imdbUrl[1];
+
+    if (/^tt\d+$/i.test(value)) return value;
+
+    let tmdbMovie = value.match(/themoviedb\.org\/movie\/(\d+)/i);
+    if (tmdbMovie) return tmdbMovie[1];
+
+    let tmdbTv = value.match(/themoviedb\.org\/tv\/(\d+)/i);
+    if (tmdbTv) return tmdbTv[1];
+
+    if (/^\d+$/.test(value)) return value;
+
+    return "";
+}
+
+function buildUrl() {
+    const code = getMediaId(mediaInput.value);
+    const seasonValue = season.value.trim();
+    const episodeValue = episode.value.trim();
+
+    if (!code) {
+        result.innerText = "Waiting for input...";
+        return;
+    }
+
+    if (currentType === "movie") {
+        result.innerText = `${currentSite}/embed/${code}/`;
+        return;
+    }
+
+    if (!seasonValue || !episodeValue) {
+        result.innerText = "Enter Season and Episode";
+        return;
+    }
+
+    result.innerText =
+        `${currentSite}/embed/${code}/${seasonValue}-${episodeValue}/`;
+}
+
+function copyUrl() {
+    const url = result.innerText;
+
+    if (url.includes("Waiting") || url.includes("Enter Season")) return;
+
+    navigator.clipboard.writeText(url);
+    alert("URL copied!");
+}
+
+function openUrl() {
+    const url = result.innerText;
+
+    if (url.includes("Waiting") || url.includes("Enter Season")) return;
+
+    window.open(url, "_blank");
+}
+
+function searchIMDb() {
+    const query = searchBox.value.trim();
+    if (!query) return alert("Enter a search term");
+
+    window.open(
+        `https://www.imdb.com/find/?q=${encodeURIComponent(query)}`,
+        "_blank"
+    );
+}
+
+function searchTMDB() {
+    const query = searchBox.value.trim();
+    if (!query) return alert("Enter a search term");
+
+    const typePath = currentType === "movie" ? "movie" : "tv";
+
+    window.open(
+        `https://www.themoviedb.org/search/${typePath}?query=${encodeURIComponent(query)}`,
+        "_blank"
+    );
+}
+</script>
+
+</body>
+</html>
